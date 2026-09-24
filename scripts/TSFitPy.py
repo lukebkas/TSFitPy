@@ -29,6 +29,7 @@ from .loading_configs import SpectraParameters, TSFitPyConfig
 import logging
 from .dask_client import get_dask_client
 import pandas as pd
+from .calculate_bandstrength import calc_bandstrength
 
 output_default_configuration_name: str = "configuration.cfg"
 output_default_fitlist_name: str = "fitlist.txt"
@@ -3214,6 +3215,39 @@ def launch_tsfitpy_with_config(tsfitpy_configuration: TSFitPyConfig, output_fold
                 df_results.rename(columns={column: f"{column}_H"}, inplace=True)
             else:
                 df_results.rename(columns={column: f"{column}_Fe"}, inplace=True)
+
+    observed_indices = {}
+    model_indices = {}
+
+    for specname in df_results["specname"].unique():
+        observed_path = os.path.join(
+            tsfitpy_configuration.spectra_input_path, str(specname),
+        )
+
+        if tsfitpy_configuration.fitting_mode == "all":
+            model_path = os.path.join(
+                tsfitpy_configuration.output_folder_path,
+                f"spectrum_fit_convolved_{specname}",
+            )
+        else:
+            model_path = os.path.join(
+                tsfitpy_configuration.output_folder_path,
+                f"result_spectrum_{specname}_convolved.spec",
+            )
+
+        observed = np.loadtxt(observed_path, usecols=(0, 1))
+        model = np.loadtxt(model_path, usecols=(0, 1))
+
+        observed_indices[specname] = calc_bandstrength(observed[:, 0], observed[:, 1])
+        model_indices[specname] = calc_bandstrength(model[:, 0], model[:, 1])
+
+    df_results["band_strength_observed"] = (
+        df_results["specname"].map(observed_indices)
+    )
+
+    df_results["band_strength_model"] = (
+        df_results["specname"].map(model_indices)
+    )
 
     # save results to csv without index and with tab delimiter
     if tsfitpy_configuration.save_results:
