@@ -14,7 +14,7 @@ ch_constants = {"Martell": ((4212., 4242., 1.), (4297., 4317., 1.), (4330., 4375
 
 def calc_bandstrength_from_file(filename: str, choice: str = "Harbeck", doppler: float = 0.0):
     """
-    Loads wave and value from a given file before running the regular calc_bandstrength
+    Loads wave and value from a given file before running the regular calc_bandstrength.
     """
     data = np.loadtxt(filename)
     wave = data[ : , 0]
@@ -47,10 +47,10 @@ def calc_bandstrength(wave: np.ndarray, value: np.ndarray, choice: str = "Harbec
     
     except ValueError:
         print("Given spectra does not fit within bands, skipping band strength calculation")
-        return 0
+        return np.nan
     except ZeroDivisionError:
         print("cbch is equal to -1*crch, unable to calculate band strength (cannot divide by zero)")
-        return 0
+        return np.nan
     except KeyError:
         print("Choose from one of these for ch next time")
         print("Martell")
@@ -61,7 +61,7 @@ def calc_bandstrength(wave: np.ndarray, value: np.ndarray, choice: str = "Harbec
         print("Harbeck")
         print("Lee")
         print("Smith")
-        return 0
+        return np.nan
 
 def apply_exact_mask(x: np.ndarray, y: np.ndarray, start: float, end: float):
     """
@@ -85,9 +85,3 @@ def apply_exact_mask(x: np.ndarray, y: np.ndarray, start: float, end: float):
     newy[0] = ys[0]
     newy[-1] = ys[1]
     return newx, newy
-
-def main():
-	print(calc_bandstrength_from_file("input_files/sample_spectrum/85-scaled.txt"))
-
-
-main()

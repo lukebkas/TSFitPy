@@ -3218,6 +3218,7 @@ def launch_tsfitpy_with_config(tsfitpy_configuration: TSFitPyConfig, output_fold
 
     observed_indices = {}
     model_indices = {}
+    band_strength_chi_squared = {}
 
     for specname in df_results["specname"].unique():
         observed_path = os.path.join(
@@ -3236,10 +3237,17 @@ def launch_tsfitpy_with_config(tsfitpy_configuration: TSFitPyConfig, output_fold
             )
 
         observed = np.loadtxt(observed_path, usecols=(0, 1))
-        model = np.loadtxt(model_path, usecols=(0, 1))
-
         observed_indices[specname] = calc_bandstrength(observed[:, 0], observed[:, 1])
-        model_indices[specname] = calc_bandstrength(model[:, 0], model[:, 1])
+        
+        if not os.path.isfile(model_path):
+            print(f"Skipping band-strength calculation for {specname} because model spectrum was not created")
+            model_indices[specname] = np.nan
+            band_strength_chi_squared[specname] = np.nan
+        else:
+            model = np.loadtxt(model_path, usecols=(0, 1))
+            model_indices[specname] = calc_bandstrength(model[:, 0], model[:, 1])
+
+            band_strength_chi_squared[specname] = ((observed_indices[specname] - model_indices[specname]) / model_indices[specname]) ** 2
 
     df_results["band_strength_observed"] = (
         df_results["specname"].map(observed_indices)
@@ -3247,6 +3255,10 @@ def launch_tsfitpy_with_config(tsfitpy_configuration: TSFitPyConfig, output_fold
 
     df_results["band_strength_model"] = (
         df_results["specname"].map(model_indices)
+    )
+
+    df_results["band_strength_chi_squared"] = (
+        df_results["specname"].map(band_strength_chi_squared)
     )
 
     # save results to csv without index and with tab delimiter
